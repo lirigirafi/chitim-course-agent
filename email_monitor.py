@@ -96,7 +96,7 @@ def fetch_new_purchase_emails(
 
     try:
         # Search for emails from the known sender (seen or unseen)
-        status, data = mail.uid("search", None, f'(FROM "{SENDER_FILTER}")')
+        status, data = mail.uid("search", None, f'(UNSEEN FROM "{SENDER_FILTER}")')
         if status != "OK" or not data[0]:
             logger.info("No emails from %s.", SENDER_FILTER)
             return results
