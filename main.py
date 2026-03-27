@@ -76,18 +76,18 @@ def process_email(record: dict, agent: WordPressAgent) -> None:
 
     # Step 1: Create WordPress user
     logger.info("Step 1/3 – Creating WP user '%s' …", username)
-    user_created = agent.create_user(
+    user_id = agent.create_user(
         username=username,
         email=purchaser_email,
         password=NEW_USER_PASSWORD,
     )
-    if not user_created:
+    if not user_id:
         logger.error("User creation failed for '%s'. Skipping enrollment.", username)
         return
 
     # Step 2: Enroll in course
-    logger.info("Step 2/3 – Enrolling '%s' in course …", username)
-    enrolled = agent.enroll_student(username=username)
+    logger.info("Step 2/3 – Enrolling '%s' (ID: %s) in course …", username, user_id)
+    enrolled = agent.enroll_student(username=username, user_id=user_id)
     if not enrolled:
         logger.error("Enrollment failed for '%s'.", username)
         # Still attempt to send credentials even if enrollment failed

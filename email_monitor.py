@@ -41,11 +41,20 @@ def get_email_body(msg) -> str:
 
 def extract_purchaser_email(body: str) -> str | None:
     """
-    Find the first email address in the body that is NOT support@grow.security.
-    Returns None if no match found.
+    Extract the customer's email from the grow.security email format.
+    The body contains a line like:  מייל: customer@example.com <other@example.com>
+    We specifically extract the email right after the 'מייל:' label.
+    Falls back to the first non-sender email if the label is not found.
     """
-    pattern = r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
-    candidates = re.findall(pattern, body)
+    email_pattern = r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+
+    # Primary: find email after the Hebrew "מייל:" label
+    label_match = re.search(r"מייל:\s*(" + email_pattern + r")", body)
+    if label_match:
+        return label_match.group(1).lower()
+
+    # Fallback: first email that is not the sender
+    candidates = re.findall(email_pattern, body)
     for addr in candidates:
         if addr.lower() != SENDER_FILTER:
             return addr.lower()
@@ -75,7 +84,10 @@ def fetch_new_purchase_emails(
 
     try:
         logger.info("Connecting to IMAP %s:%s …", imap_host, imap_port)
-        mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        if imap_port == 993:
+            mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        else:
+            mail = imaplib.IMAP4(imap_host, imap_port)
         mail.login(email_address, email_password)
         mail.select("INBOX")
     except imaplib.IMAP4.error as exc:
@@ -182,7 +194,10 @@ def create_draft(
     raw_message = msg.as_bytes()
 
     try:
-        mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        if imap_port == 993:
+            mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        else:
+            mail = imaplib.IMAP4(imap_host, imap_port)
         mail.login(email_address, email_password)
 
         # Try common Drafts folder names
