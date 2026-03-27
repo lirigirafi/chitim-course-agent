@@ -1,0 +1,197 @@
+"""
+email_monitor.py
+Connects to IMAP, fetches unread emails from support@grow.security,
+and checks for the Hebrew purchase phrase.
+"""
+
+import imaplib
+import email
+import email.header
+import re
+import logging
+from email.policy import default as default_policy
+
+logger = logging.getLogger(__name__)
+
+SENDER_FILTER = "support@grow.security"
+REQUIRED_PHRASE = "רכישת כניסה לקורס הגינון האקולוגי מורחב"
+
+
+def decode_part(part) -> str:
+    """Decode a raw email bytes payload to a unicode string."""
+    charset = part.get_content_charset() or "utf-8"
+    try:
+        return part.get_payload(decode=True).decode(charset, errors="replace")
+    except Exception:
+        return part.get_payload(decode=True).decode("utf-8", errors="replace")
+
+
+def get_email_body(msg) -> str:
+    """Extract plain-text body from an email.Message object."""
+    body_parts = []
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() == "text/plain" and part.get("Content-Disposition") is None:
+                body_parts.append(decode_part(part))
+    else:
+        body_parts.append(decode_part(msg))
+    return "\n".join(body_parts)
+
+
+def extract_purchaser_email(body: str) -> str | None:
+    """
+    Find the first email address in the body that is NOT support@grow.security.
+    Returns None if no match found.
+    """
+    pattern = r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+    candidates = re.findall(pattern, body)
+    for addr in candidates:
+        if addr.lower() != SENDER_FILTER:
+            return addr.lower()
+    return None
+
+
+def fetch_new_purchase_emails(
+    imap_host: str,
+    imap_port: int,
+    email_address: str,
+    email_password: str,
+) -> list[dict]:
+    """
+    Connect to IMAP, search for unread emails from SENDER_FILTER that
+    contain REQUIRED_PHRASE. Returns a list of dicts:
+        {
+            "uid": bytes,
+            "from": str,
+            "subject": str,
+            "body": str,
+            "purchaser_email": str,
+            "username": str,
+        }
+    Marks matched emails as seen.
+    """
+    results = []
+
+    try:
+        logger.info("Connecting to IMAP %s:%s …", imap_host, imap_port)
+        mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        mail.login(email_address, email_password)
+        mail.select("INBOX")
+    except imaplib.IMAP4.error as exc:
+        logger.error("IMAP connection / login failed: %s", exc)
+        return results
+
+    try:
+        # Search for UNSEEN messages from the known sender
+        status, data = mail.uid("search", None, f'(UNSEEN FROM "{SENDER_FILTER}")')
+        if status != "OK" or not data[0]:
+            logger.info("No new emails from %s.", SENDER_FILTER)
+            return results
+
+        uids = data[0].split()
+        logger.info("Found %d candidate email(s).", len(uids))
+
+        for uid in uids:
+            status, msg_data = mail.uid("fetch", uid, "(RFC822)")
+            if status != "OK":
+                continue
+
+            raw = msg_data[0][1]
+            msg = email.message_from_bytes(raw, policy=default_policy)
+            body = get_email_body(msg)
+
+            if REQUIRED_PHRASE not in body:
+                logger.debug("UID %s: required phrase not found, skipping.", uid)
+                continue
+
+            purchaser_email = extract_purchaser_email(body)
+            if not purchaser_email:
+                logger.warning("UID %s: phrase found but no purchaser email extracted.", uid)
+                continue
+
+            username = purchaser_email.split("@")[0]
+            logger.info("UID %s: purchase detected for %s (username: %s)", uid, purchaser_email, username)
+
+            # Mark as seen so we don't process it twice
+            mail.uid("store", uid, "+FLAGS", "\\Seen")
+
+            results.append(
+                {
+                    "uid": uid,
+                    "from": msg.get("From", ""),
+                    "subject": msg.get("Subject", ""),
+                    "body": body,
+                    "purchaser_email": purchaser_email,
+                    "username": username,
+                }
+            )
+    except Exception as exc:
+        logger.exception("Error while processing emails: %s", exc)
+    finally:
+        try:
+            mail.logout()
+        except Exception:
+            pass
+
+    return results
+
+
+def create_draft(
+    imap_host: str,
+    imap_port: int,
+    email_address: str,
+    email_password: str,
+    to_address: str,
+    username: str,
+    password: str,
+) -> bool:
+    """
+    Append a draft message to the IMAP Drafts folder.
+    Returns True on success.
+    """
+    import email.mime.text
+    from datetime import datetime
+    import time
+
+    subject = "פרטי הכניסה שלך לקורס גינון אקולוגי מורחב"
+    body_text = (
+        f"שלום {username},\n\n"
+        f"ברוכים הבאים לקורס גינון אקולוגי מורחב!\n\n"
+        f"להלן פרטי הכניסה שלך:\n"
+        f"שם משתמש: {username}\n"
+        f"סיסמה: {password}\n\n"
+        f"ניתן להתחבר בכתובת: https://meshek.chitim.co.il\n\n"
+        f"בברכה,\nצוות חיטים"
+    )
+
+    msg = email.mime.text.MIMEText(body_text, "plain", "utf-8")
+    msg["From"] = email_address
+    msg["To"] = to_address
+    msg["Subject"] = subject
+    msg["Date"] = email.utils.formatdate(localtime=True)
+
+    raw_message = msg.as_bytes()
+
+    try:
+        mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        mail.login(email_address, email_password)
+
+        # Try common Drafts folder names
+        for drafts_folder in ("Drafts", "INBOX.Drafts", "[Gmail]/Drafts", "草稿"):
+            result = mail.append(
+                drafts_folder,
+                "\\Draft",
+                imaplib.Time2Internaldate(time.time()),
+                raw_message,
+            )
+            if result[0] == "OK":
+                logger.info("Draft saved to folder '%s' for %s", drafts_folder, to_address)
+                mail.logout()
+                return True
+
+        logger.warning("Could not find a Drafts folder; draft not saved.")
+        mail.logout()
+        return False
+    except Exception as exc:
+        logger.exception("Failed to create draft: %s", exc)
+        return False
