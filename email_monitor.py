@@ -13,7 +13,8 @@ from email.policy import default as default_policy
 
 logger = logging.getLogger(__name__)
 
-SENDER_FILTER = "support@grow.security"
+# SENDER_FILTER = "support@grow.security"
+SENDER_FILTER = "liri.girafi@gmail.com"
 REQUIRED_PHRASE = "רכישת כניסה לקורס הגינון האקולוגי מורחב"
 
 
@@ -82,14 +83,16 @@ def fetch_new_purchase_emails(
         return results
 
     try:
-        # Search for UNSEEN messages from the known sender
-        status, data = mail.uid("search", None, f'(UNSEEN FROM "{SENDER_FILTER}")')
+        # Search for emails from the known sender (seen or unseen)
+        status, data = mail.uid("search", None, f'(FROM "{SENDER_FILTER}")')
         if status != "OK" or not data[0]:
-            logger.info("No new emails from %s.", SENDER_FILTER)
+            logger.info("No emails from %s.", SENDER_FILTER)
             return results
 
-        uids = data[0].split()
-        logger.info("Found %d candidate email(s).", len(uids))
+        all_uids = data[0].split()
+        # Keep only the last 10
+        uids = all_uids[-10:]
+        logger.info("Found %d email(s) from sender (checking last %d).", len(all_uids), len(uids))
 
         for uid in uids:
             status, msg_data = mail.uid("fetch", uid, "(RFC822)")
@@ -155,13 +158,19 @@ def create_draft(
 
     subject = "פרטי הכניסה שלך לקורס גינון אקולוגי מורחב"
     body_text = (
-        f"שלום {username},\n\n"
-        f"ברוכים הבאים לקורס גינון אקולוגי מורחב!\n\n"
-        f"להלן פרטי הכניסה שלך:\n"
-        f"שם משתמש: {username}\n"
-        f"סיסמה: {password}\n\n"
-        f"ניתן להתחבר בכתובת: https://meshek.chitim.co.il\n\n"
-        f"בברכה,\nצוות חיטים"
+        f"היי,\n"
+        f"תודה לך על רכישת קורס דיגיטלי של משק חיטים.\n\n\n"
+        f"לכניסה לקורס הגינון האקולוגי המורחב:\n"
+        f"https://meshek.chitim.co.il/courses/%D7%A7%D7%95%D7%A8%D7%A1-%D7%92%D7%99%D7%A0%D7%95%D7%9F-%D7%90%D7%A7%D7%95%D7%9C%D7%95%D7%92%D7%99/\n\n"
+        f"לכניסה לקורס הגינון ירקות באדניות ומרפסות:\n"
+        f"https://meshek.chitim.co.il/courses/קורס-אדניות-ומרפסות/\n\n"
+        f"*במקרה והקישורים אינם לחיצים ניתן להעתיק ולהדביק לדפדפן.\n\n\n"
+        f"לאחר הכניסה לקישור להתחבר בעזרת פרטי ההתחברות,\n"
+        f"במקרה ויצרת משתמש בעבר יש להשתמש במייל והסיסמא שיצרת.\n"
+        f"במקרה ולא אלו הם פרטי ההתחברות שלך:\n\n"
+        f"שם משתמש: {username}                        \n"
+        f"סיסמה: {password}\n\n\n"
+        f"משק חיטים"
     )
 
     msg = email.mime.text.MIMEText(body_text, "plain", "utf-8")
