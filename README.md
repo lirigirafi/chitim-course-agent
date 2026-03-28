@@ -59,14 +59,13 @@ cp .env.example .env
 | Variable | Description |
 |---|---|
 | `IMAP_HOST` | IMAP server hostname |
-| `IMAP_PORT` | IMAP port (143 for plain, 993 for SSL) |
+| `IMAP_PORT` | IMAP port (143) |
 | `EMAIL_ADDRESS` | Full email address (`chitim@zahav.net.il`) |
 | `EMAIL_PASSWORD` | Email account password |
 | `WP_ADMIN_URL` | WordPress admin base URL |
 | `WP_ADMIN_USER` | WordPress admin username |
 | `WP_ADMIN_PASSWORD` | WordPress admin password |
 | `NEW_USER_PASSWORD` | Default password for new users (default: `1234`) |
-| `CHECK_INTERVAL` | Seconds between inbox checks (default: `300`) |
 
 ### AWS (production)
 Store all variables above as a single JSON secret in **AWS Secrets Manager** named `chitim-course`.

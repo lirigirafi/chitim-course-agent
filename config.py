@@ -13,8 +13,7 @@ Expected secret value (JSON):
     "WP_ADMIN_URL": "https://meshek.chitim.co.il/wp-admin",
     "WP_ADMIN_USER": "...",
     "WP_ADMIN_PASSWORD": "...",
-    "NEW_USER_PASSWORD": "1234",
-    "CHECK_INTERVAL": "300"
+    "NEW_USER_PASSWORD": "1234"
 }
 """
 
@@ -52,7 +51,6 @@ def _load_from_env() -> dict:
         "WP_ADMIN_USER": os.getenv("WP_ADMIN_USER", ""),
         "WP_ADMIN_PASSWORD": os.getenv("WP_ADMIN_PASSWORD", ""),
         "NEW_USER_PASSWORD": os.getenv("NEW_USER_PASSWORD", "1234"),
-        "CHECK_INTERVAL": os.getenv("CHECK_INTERVAL", "300"),
     }
 
 

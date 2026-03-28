@@ -42,7 +42,6 @@ WP_ADMIN_USER = cfg["WP_ADMIN_USER"]
 WP_ADMIN_PASSWORD = cfg["WP_ADMIN_PASSWORD"]
 
 NEW_USER_PASSWORD = cfg["NEW_USER_PASSWORD"]
-CHECK_INTERVAL = int(cfg["CHECK_INTERVAL"])
 
 
 # ---------------------------------------------------------------------------
