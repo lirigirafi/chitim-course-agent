@@ -200,23 +200,25 @@ def create_draft(
     import time
 
     subject = "פרטי הכניסה שלך לקורס גינון אקולוגי מורחב"
+    course1_url = "https://meshek.chitim.co.il/courses/%D7%A7%D7%95%D7%A8%D7%A1-%D7%92%D7%99%D7%A0%D7%95%D7%9F-%D7%90%D7%A7%D7%95%D7%9C%D7%95%D7%92%D7%99/"
+    course2_url = "https://meshek.chitim.co.il/courses/%D7%A7%D7%95%D7%A8%D7%A1-%D7%90%D7%93%D7%A0%D7%99%D7%95%D7%AA-%D7%95%D7%9E%D7%A8%D7%A4%D7%A1%D7%95%D7%AA/"
     body_text = (
-        f"היי,\n\n"
-        f"תודה לך על רכישת קורס דיגיטלי של משק חיטים.\n\n\n"
-        f"לכניסה לקורס הגינון האקולוגי המורחב:\n"
-        f"https://meshek.chitim.co.il/courses/%D7%A7%D7%95%D7%A8%D7%A1-%D7%92%D7%99%D7%A0%D7%95%D7%9F-%D7%90%D7%A7%D7%95%D7%9C%D7%95%D7%92%D7%99/\n\n"
-        f"לכניסה לקורס הגינון ירקות באדניות ומרפסות:\n"
-        f"https://meshek.chitim.co.il/courses/%D7%A7%D7%95%D7%A8%D7%A1-%D7%90%D7%93%D7%A0%D7%99%D7%95%D7%AA-%D7%95%D7%9E%D7%A8%D7%A4%D7%A1%D7%95%D7%AA/\n\n"
-        f"*במקרה והקישורים אינם לחיצים ניתן להעתיק ולהדביק לדפדפן.\n\n\n"
-        f"לאחר הכניסה לקישור להתחבר בעזרת פרטי ההתחברות,\n"
-        f"במקרה ויצרת משתמש בעבר יש להשתמש במייל והסיסמא שיצרת.\n"
-        f"במקרה ולא אלו הם פרטי ההתחברות שלך:\n\n"
-        f"שם משתמש: {username}\n"
-        f"סיסמה: {password}\n\n\n"
+        f"היי,<br><br>"
+        f"תודה לך על רכישת קורס דיגיטלי של משק חיטים.<br><br><br>"
+        f"לכניסה לקורס הגינון האקולוגי המורחב:<br>"
+        f'<a href="{course1_url}">{course1_url}</a><br><br>'
+        f"לכניסה לקורס הגינון ירקות באדניות ומרפסות:<br>"
+        f'<a href="{course2_url}">{course2_url}</a><br><br>'
+        f"*במקרה והקישורים אינם לחיצים ניתן להעתיק ולהדביק לדפדפן.<br><br><br>"
+        f"לאחר הכניסה לקישור להתחבר בעזרת פרטי ההתחברות,<br>"
+        f"במקרה ויצרת משתמש בעבר יש להשתמש במייל והסיסמא שיצרת.<br>"
+        f"במקרה ולא אלו הם פרטי ההתחברות שלך:<br><br>"
+        f"שם משתמש: {username}<br>"
+        f"סיסמה: {password}<br><br><br>"
         f"משק חיטים"
     )
 
-    msg = email.mime.text.MIMEText(body_text, "plain", "utf-8")
+    msg = email.mime.text.MIMEText(body_text, "html", "utf-8")
     msg["From"] = email_address
     msg["To"] = to_address
     msg["Subject"] = subject
