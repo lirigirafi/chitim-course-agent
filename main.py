@@ -12,11 +12,9 @@ Flow:
 """
 
 import logging
-import os
 import time
 
-from dotenv import load_dotenv
-
+import config
 from email_monitor import fetch_new_purchase_emails, create_draft
 from wordpress_agent import WordPressAgent
 
@@ -31,21 +29,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Load environment variables
+# Load configuration (Secrets Manager on Lambda, .env locally)
 # ---------------------------------------------------------------------------
-load_dotenv()
+cfg = config.load()
 
-IMAP_HOST = os.getenv("IMAP_HOST", "mail.zahav.net.il")
-IMAP_PORT = int(os.getenv("IMAP_PORT", "993"))
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
+IMAP_HOST = cfg["IMAP_HOST"]
+IMAP_PORT = int(cfg["IMAP_PORT"])
+EMAIL_ADDRESS = cfg["EMAIL_ADDRESS"]
+EMAIL_PASSWORD = cfg["EMAIL_PASSWORD"]
 
-WP_ADMIN_URL = os.getenv("WP_ADMIN_URL", "https://meshek.chitim.co.il/wp-admin")
-WP_ADMIN_USER = os.getenv("WP_ADMIN_USER", "")
-WP_ADMIN_PASSWORD = os.getenv("WP_ADMIN_PASSWORD", "")
+WP_ADMIN_URL = cfg["WP_ADMIN_URL"]
+WP_ADMIN_USER = cfg["WP_ADMIN_USER"]
+WP_ADMIN_PASSWORD = cfg["WP_ADMIN_PASSWORD"]
 
-NEW_USER_PASSWORD = os.getenv("NEW_USER_PASSWORD", "1234")
-CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "300"))
+NEW_USER_PASSWORD = cfg["NEW_USER_PASSWORD"]
+CHECK_INTERVAL = int(cfg["CHECK_INTERVAL"])
 
 
 # ---------------------------------------------------------------------------
