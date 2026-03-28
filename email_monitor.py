@@ -123,10 +123,8 @@ def fetch_new_purchase_emails(
             logger.info("No emails from %s.", SENDER_FILTER)
             return results
 
-        all_uids = data[0].split()
-        # Keep only the last 10
-        uids = all_uids[-10:]
-        logger.info("Found %d email(s) from sender (checking last %d).", len(all_uids), len(uids))
+        uids = data[0].split()
+        logger.info("Found %d email(s) from sender.", len(uids))
 
         processed_uids = _load_processed_uids()
 
