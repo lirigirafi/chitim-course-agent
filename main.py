@@ -152,5 +152,13 @@ def run() -> None:
     logger.info("Done.")
 
 
+def lambda_handler(event, context):
+    run()
+    return {
+        'statusCode': 200,
+        'body': 'Automation completed successfully'
+    }
+
+
 if __name__ == "__main__":
     run()
